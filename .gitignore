@@ -1,5 +1,4 @@
 node_modules
 docs-Datein
-docs.*
 package-lock.json
 .env
