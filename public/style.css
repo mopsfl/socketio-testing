@@ -1,0 +1,134 @@
+* {
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+}
+
+body {
+    background-color: rgb(36, 36, 36);
+}
+
+footer {
+    position: absolute;
+    bottom: 0px;
+    left: 10px;
+    font-size: 12px;
+}
+
+.inputs,
+.inputs>div {
+    user-select: none;
+}
+
+input[type="button"] {
+    background-color: rgb(48, 48, 48);
+    border: solid 1px rgb(71, 71, 71);
+    padding: 5px 5px;
+    border-radius: 3px;
+    color: white;
+    min-width: 100px;
+    transition: background-color .3s, border .3s;
+}
+
+input[type="button"]:hover {
+    background-color: rgb(63, 63, 63);
+    border: solid 1px rgb(100, 100, 100);
+}
+
+input[type="button"]:active {
+    background-color: rgb(85, 85, 85);
+    border: solid 1px rgb(116, 116, 116);
+}
+
+input[type="text"] {
+    background-color: rgb(48, 48, 48);
+    border: solid 1px rgb(71, 71, 71);
+    padding: 5px 5px;
+    border-radius: 3px;
+    outline: solid 2px transparent;
+    color: white;
+    transition: border .3s, outline .3s;
+}
+
+input[type="text"]:hover {
+    border: solid 1px rgb(100, 100, 100);
+}
+
+input[type="text"]:focus {
+    border: solid 1px transparent;
+    outline: solid 2px rgba(44, 153, 255, 0.562);
+    transition: border .1s, outline .6s;
+}
+
+input:focus {
+    outline: none
+}
+
+.hidden {
+    display: none;
+}
+
+.loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.onlineusers-list {
+    background-color: rgb(36, 36, 36);
+    border: solid 1px rgb(71, 71, 71);
+    min-width: 170px;
+    max-height: 240px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    position: absolute;
+    padding: 15px;
+    right: 5px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    border-radius: 3px;
+}
+
+.onlineusers-list::-webkit-scrollbar {
+    display: none;
+}
+
+.onlineusers-list>h3 {
+    margin: 0;
+    font-size: 12px;
+    text-align: right;
+    padding-bottom: 5px;
+    border-bottom: solid 1px rgb(71, 71, 71);
+}
+
+.onlineusers-list>ul {
+    padding-left: 0px;
+    padding-right: 0px;
+    text-align: right;
+    margin-bottom: 0px;
+    display: grid;
+}
+
+.onlineusers-list>ul>p {
+    margin: 5px;
+    padding-right: 0px;
+    font-size: 14px;
+    text-align: center;
+    background-color: rgb(48, 48, 48);
+    border: solid 1px rgb(71, 71, 71);
+    padding: 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .3s, border .3s;
+}
+
+.onlineusers-list>ul>p:hover {
+    background-color: rgb(63, 63, 63);
+    border: solid 1px rgb(100, 100, 100);
+}
+
+.onlineusers-list>ul>p:active {
+    background-color: rgb(85, 85, 85);
+    border: solid 1px rgb(116, 116, 116);
+}

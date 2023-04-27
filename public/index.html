@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client</title>
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="client.js" type="text/javascript" defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="loading">
+        <p>Loading...</p>
+    </div>
+    <main class="hidden">
+        <div class="onlineusers-list" data-onlineusers-list>
+            <h3>Online Users <span data-onlineusers>(0)</span></h3>
+            <ul data-userlist>
+                <template data-usertemplate>
+                    <p></p>
+                </template>
+            </ul>
+        </div>
+        <div class="inputs">
+            <input data-msg type="text" placeholder="Message" required> <input data-sendmsg type="button" value="Send">
+            <ul data-messages>
+                <template data-messagetemplate>
+            <li></li>
+        </template>
+            </ul>
+            <div class="username-changer">
+                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input data-changeusername type="button" value="Change Username">
+            </div>
+        </div>
+        <footer>
+            <p><span data-userinfo>username &middot; uuid</span><span data-ping> &middot; ping: 0ms</span></p>
+        </footer>
+    </main>
+</body>
+
+</html>
