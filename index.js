@@ -281,6 +281,13 @@ io.on("connection", async(client) => {
             days: 365
         })
     })
+
+    client.on("login", async(packet) => {
+        console.log("login request: ", packet)
+        client.emit(`${client.uuid}_logincallback`, {
+            value: await misc.encodeString("test", string_encode_pattern, 5, 5)
+        })
+    })
 })
 
 /*PING CHECK*/

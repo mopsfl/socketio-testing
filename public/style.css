@@ -19,41 +19,54 @@ footer {
     user-select: none;
 }
 
-input[type="button"] {
+input[type="button"],
+input[type="submit"],
+button {
     background-color: rgb(48, 48, 48);
     border: solid 1px rgb(71, 71, 71);
     padding: 5px 5px;
     border-radius: 3px;
     color: white;
     min-width: 100px;
+    cursor: pointer;
+    margin-bottom: 5px;
     transition: background-color .3s, border .3s;
 }
 
-input[type="button"]:hover {
+input[type="button"]:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+button:hover:not(:disabled) {
     background-color: rgb(63, 63, 63);
     border: solid 1px rgb(100, 100, 100);
 }
 
-input[type="button"]:active {
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled),
+button:active:not(:disabled) {
     background-color: rgb(85, 85, 85);
     border: solid 1px rgb(116, 116, 116);
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
     background-color: rgb(48, 48, 48);
     border: solid 1px rgb(71, 71, 71);
     padding: 5px 5px;
     border-radius: 3px;
     outline: solid 2px transparent;
     color: white;
+    cursor: text;
     transition: border .3s, outline .3s;
+    margin-bottom: 5px;
 }
 
-input[type="text"]:hover {
+input[type="text"]:hover:not(:disabled),
+input[type="password"]:hover:not(:disabled) {
     border: solid 1px rgb(100, 100, 100);
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus:not(:disabled),
+input[type="password"]:focus:not(:disabled) {
     border: solid 1px transparent;
     outline: solid 2px rgba(44, 153, 255, 0.562);
     transition: border .1s, outline .6s;
@@ -64,7 +77,7 @@ input:focus {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 .loading {
@@ -131,4 +144,39 @@ input:focus {
 .onlineusers-list>ul>p:active {
     background-color: rgb(85, 85, 85);
     border: solid 1px rgb(116, 116, 116);
+}
+
+.login {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -100%);
+    text-align: center;
+    display: grid;
+}
+
+.login>h1 {
+    margin-bottom: 30px;
+    user-select: none;
+    padding-bottom: 10px;
+    border-bottom: solid 1px rgb(71, 71, 71);
+}
+
+.login>input,
+.login>button {
+    min-width: 250px;
+}
+
+.login>button {
+    margin-top: 10px;
+}
+
+input.invalid {
+    border: solid 1px rgb(133, 17, 17);
+}
+
+input:disabled,
+button:disabled {
+    opacity: 50%;
+    cursor: not-allowed;
 }

@@ -9,34 +9,41 @@
     <script src="/socket.io/socket.io.js" defer></script>
     <script src="client.js" type="text/javascript" defer></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 
 <body>
-    <div class="loading">
+    <div element-loading class="loading">
         <p>Loading...</p>
     </div>
+    <div element-login class="login hidden">
+        <h1>Login</h1>
+        <input data-loginusername type="text" placeholder="Username" required>
+        <input data-loginpassword type="password" placeholder="Password" required>
+        <button element-loginsubmit type="submit" value="Login" value="Login"><span element-text>Login</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button>
+    </div>
     <main class="hidden">
-        <div class="onlineusers-list" data-onlineusers-list>
-            <h3>Online Users <span data-onlineusers>(0)</span></h3>
-            <ul data-userlist>
-                <template data-usertemplate>
+        <div class="onlineusers-list" element-onlineusers-list>
+            <h3>Online Users <span element-onlineusers>(0)</span></h3>
+            <ul element-userlist>
+                <template element-usertemplate>
                     <p></p>
                 </template>
             </ul>
         </div>
         <div class="inputs">
-            <input data-msg type="text" placeholder="Message" required> <input data-sendmsg type="button" value="Send">
-            <ul data-messages>
-                <template data-messagetemplate>
+            <input data-msg type="text" placeholder="Message" required> <input element-sendmsg type="button" value="Send">
+            <ul element-messages>
+                <template element-messagetemplate>
             <li></li>
         </template>
             </ul>
             <div class="username-changer">
-                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input data-changeusername type="button" value="Change Username">
+                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input element-changeusername type="button" value="Change Username">
             </div>
         </div>
         <footer>
-            <p><span data-userinfo>username &middot; uuid</span><span data-ping> &middot; ping: 0ms</span></p>
+            <p><span element-userinfo>username &middot; uuid</span><span element-ping> &middot; ping: 0ms</span></p>
         </footer>
     </main>
 </body>

@@ -10,19 +10,23 @@ io = () => socket;
 /*VARIABLES*/
 
 const main = document.querySelector("main"),
-    loading = document.querySelector(".loading")
+    loading = document.querySelector("[element-loading]"),
+    login = document.querySelector("[element-login]")
 
-const userinfo = document.querySelector("[data-userinfo]"),
-    ping = document.querySelector("[data-ping]"),
-    usertemplate = document.querySelector("[data-usertemplate]"),
-    userlist = document.querySelector("[data-userlist]"),
-    dataonlineusers = document.querySelector("[data-onlineusers]"),
-    messages = document.querySelector("[data-messages]"),
-    messagetemplate = document.querySelector("[data-messagetemplate]"),
+const userinfo = document.querySelector("[element-userinfo]"),
+    ping = document.querySelector("[element-ping]"),
+    usertemplate = document.querySelector("[element-usertemplate]"),
+    userlist = document.querySelector("[element-userlist]"),
+    dataonlineusers = document.querySelector("[element-onlineusers]"),
+    messages = document.querySelector("[element-messages]"),
+    messagetemplate = document.querySelector("[element-messagetemplate]"),
     msg = document.querySelector("[data-msg]"),
-    sendmsg = document.querySelector("[data-sendmsg]"),
+    sendmsg = document.querySelector("[element-sendmsg]"),
     usernameinput = document.querySelector("[data-usernameinput]"),
-    changeusername = document.querySelector("[data-changeusername]")
+    changeusername = document.querySelector("[element-changeusername]"),
+    loginusername = document.querySelector("[data-loginusername]"),
+    loginpassword = document.querySelector("[data-loginpassword]"),
+    loginsubmit = document.querySelector("[element-loginsubmit]")
 
 /*FUNCTIONS*/
 
@@ -84,7 +88,29 @@ notification = function(name, value) {
 
 }
 
-/*EVENTS*/
+/**
+ * @argument {HTMLElement} input
+ * @argument {Number} speed
+ */
+invalidInput = function(input, speed = 150) {
+    if (!input || typeof input != "object" || !input.classList) return "'input' type is not a HTMLElement"
+    if (input.dataset.invalid) return
+
+    input.dataset.invalid = true
+    input.classList.add("invalid")
+    setTimeout(() => {
+        input.classList.remove("invalid")
+        setTimeout(() => {
+            input.classList.add("invalid")
+            setTimeout(() => {
+                input.classList.remove("invalid")
+                delete input.dataset.invalid
+            }, speed);
+        }, speed);
+    }, speed);
+}
+
+/*SOCKET*/
 
 if (typeof socket != "string" && socket != "test") {
     socket.on("message", (packet) => {
@@ -146,7 +172,7 @@ if (typeof socket != "string" && socket != "test") {
             })
         }, 1000);
 
-        main.classList.remove("hidden")
+        login.classList.remove("hidden")
         loading.classList.add("hidden")
     })
 
@@ -206,6 +232,32 @@ if (typeof socket != "string" && socket != "test") {
 
         console.log("<Client>: sent event 'changeusername'", packet)
     })
+
+    loginsubmit.addEventListener("click", async(e) => {
+        if (!loginusername.validity.valid || loginusername.value.length < 1) return invalidInput(loginusername)
+        if (!loginpassword.validity.valid || loginpassword.value.length < 1) return invalidInput(loginpassword)
+
+        let username = loginusername.value,
+            password = loginpassword.value,
+            packet = {
+                username: username,
+                password: password
+            }
+
+        loginusername.disabled = true
+        loginpassword.disabled = true
+        loginsubmit.disabled = true
+        loginsubmit.querySelector("[element-icon]").classList.remove("hidden")
+        loginsubmit.querySelector("[element-text]").classList.add("hidden")
+
+        await socket.emit("login", packet)
+
+        socket.on(`${session.uuid}_logincallback`, async(packet) => {
+            console.log(`${session.uuid}_logincallback`, packet)
+            console.log(await decodeString(packet.value, parseInt(parseCookies(document.cookie).sp)))
+        })
+
+    })
 } else {
     console.log(`<Client>: test view enabled ${location.hash != "" ? `<${location.hash}>` : ""}`)
     const test_players = Math.floor(10*Math.random())
@@ -222,6 +274,6 @@ if (typeof socket != "string" && socket != "test") {
 
     setTimeout(() => {
         loading.classList.add("hidden")
-        main.classList.remove("hidden")
+        login.classList.remove("hidden")
     }, !location.hash.includes("noloading") ? 1000 : 0);
 }
