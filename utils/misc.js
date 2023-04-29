@@ -9,7 +9,7 @@ module.exports = {
         acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
         return acc
     }, {}),
-    encodeString: async function(str, pattern, fakestrings = Math.floor(50 * Math.random()), fakestring_length = Math.floor(50 * Math.random())) {
+    encodeString: async function(str, pattern, fakestrings = Math.floor(5 * Math.random()), fakestring_length = Math.floor(5 * Math.random())) {
         if (typeof str != "string") return ["'str' must be a <string>"]
         if (typeof pattern != "number") return ["'pattern' must be a <number>"]
         if (typeof fakestrings != "number") return ["'fakestrings' must be a <number>"]

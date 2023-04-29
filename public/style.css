@@ -189,6 +189,10 @@ input:focus {
     display: grid;
 }
 
+.login>form {
+    display: grid;
+}
+
 .login>h1 {
     margin-bottom: 20px;
     user-select: none;
@@ -196,12 +200,12 @@ input:focus {
     border-bottom: solid 1px rgb(71, 71, 71);
 }
 
-.login>input,
-.login>button {
+.login>form>input,
+.login>form>button {
     min-width: 250px;
 }
 
-.login>button {
+.login>form>button {
     margin-top: 10px;
 }
 
@@ -218,6 +222,8 @@ button:disabled {
 .input-notif {
     margin-bottom: 15px;
     border-radius: 3px;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 .input-notif.valid {

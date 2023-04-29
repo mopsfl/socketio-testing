@@ -129,7 +129,7 @@ if (typeof socket != "string" && socket != "test") {
 
 
         session.users = data.users
-        session.online_users = data.users.length - 1
+        session.online_users = data.users.length
 
         if (data.users.length > 1) {
             data.users.forEach(user => {
@@ -152,7 +152,7 @@ if (typeof socket != "string" && socket != "test") {
         userinfo.innerHTML = `${data.username} &middot; ${data.uuid} &middot; `
 
         session = data
-        dataonlineusers.innerText = `(${data.online_users-1})`
+        dataonlineusers.innerText = `(${data.online_users})`
 
         if (data.users.length > 1) {
             data.users.forEach(user => {
@@ -197,7 +197,7 @@ if (typeof socket != "string" && socket != "test") {
         if (!packet || !packet.filtered) return
 
         session.username = packet.filtered
-        userinfo.innerHTML = `${session.username} &middot; ${session.uuid} &middot; `
+        userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid} &middot; `
     })
 
     socket.on("setcookie", (packet) => {
@@ -238,6 +238,7 @@ if (typeof socket != "string" && socket != "test") {
     })
 
     loginsubmit.addEventListener("click", async(e) => {
+        e.preventDefault()
         if (!loginusername.validity.valid || loginusername.value.length < 1) return invalidInput(loginusername)
         if (!loginpassword.validity.valid || loginpassword.value.length < 1) return invalidInput(loginpassword)
 
@@ -256,10 +257,10 @@ if (typeof socket != "string" && socket != "test") {
 
         await socket.emit("login", packet)
 
-        socket.on(`${session.uuid}_logincallback`, async(packet, stage) => {
+        socket.on(`${session.id}_logincallback`, async(packet, stage) => {
             console.log(`stage ${stage}`)
+            console.log(`${session.id}_logincallback`, packet)
             if (stage == 1) {
-                console.log(`${session.uuid}_logincallback`, packet)
                 const value = packet.value ? await decodeString(packet.value, sp()) : false
                 const inputNotif = login.querySelector("[element-input-notif]"),
                     inputNotifText = inputNotif.querySelector("[element-value]")
@@ -286,6 +287,12 @@ if (typeof socket != "string" && socket != "test") {
                 if (packet.state == true) {
                     login.classList.add("hidden")
                     main.classList.remove("hidden")
+
+                    if (packet.userdata) {
+                        session.uuid = packet.userdata.uuid
+                        session.username = packet.userdata.username
+                        userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid} &middot; `
+                    }
                 }
             }
         })

@@ -12,7 +12,7 @@ module.exports = {
         if (!users) return "Unable to get key 'users' from cache"
         if (!client) return "Missing argument 'client'"
 
-        const uuid = this.generateUUID()
+        const uuid = await this.generateUUID()
         client.uuid = uuid
         client.failed_pings = 0
         client.username = {
@@ -41,19 +41,22 @@ module.exports = {
         if (!client) return "Missing argument 'client'"
         const users = cache.get("users")
         const pings = cache.get("pings")
-        const index = users.indexOf(users.find(user => user.uuid == client.uuid))
+        const clientIndex = users.indexOf(users.find(user => user.id == client.id))
+        const sessionIndex = users.indexOf(users.find(session => session.session == client.session))
+        if (clientIndex < 0 || sessionIndex < 0) return
 
-        cache.remove("users", index)
-        if (pings[client.uuid]) {
-            pings[client.uuid].client_disconnected = client.disconnected
-            pings[client.uuid].disconnection_time = Date.now()
+        cache.remove("users", clientIndex)
+        cache.remove("sessions", sessionIndex)
+        if (pings[client.id]) {
+            pings[client.id].client_disconnected = client.disconnected
+            pings[client.id].disconnection_time = Date.now()
         }
         client.broadcast.emit("updateusers", {
             users: this.getAllUsers(),
             online_users: users.length
         })
 
-        console.log(`User disconnected: ${client.uuid} (${client.id})`)
+        console.log(`User disconnected: ${client.uuid || "<uuid_not_found>"} (${client.id})`)
 
         return {
             success: true
@@ -65,7 +68,7 @@ module.exports = {
      */
     clientExists: async function(uuid) {
         const io = global.io
-        if (!io) return
+        if (!io || !uuid) return false
 
         for (const client of await io.fetchSockets()) {
             if (client.uuid == uuid) return true
@@ -75,8 +78,8 @@ module.exports = {
     /**
      * @description Generates and returns a random UUID
      */
-    generateUUID: function() {
-        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+    generateUUID: async function() {
+        return await ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
     },

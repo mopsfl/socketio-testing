@@ -2,7 +2,8 @@
 TODO:
 
 > fix filter bypass when sending on cooldown
-
+> fix duplicate messages
+> fix replication issues with 2+ sessions
 
 */
 
@@ -32,7 +33,7 @@ const regexes = {
     url: /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi
 }
 
-const string_encode_pattern = Math.floor(1500 * Math.random())
+const string_encode_pattern = Math.floor(100 * Math.random())
 
 // UTILS
 
@@ -94,6 +95,15 @@ app.get("/server/users", (req, res) => {
         return res.status(500).json({ code: 500, message: "Internal Server Error" })
     }
 })
+app.get("/server/sessions", (req, res) => {
+    try {
+        const sessions = cache.get("sessions")
+        return res.json(sessions)
+    } catch (e) {
+        console.error(e)
+        return res.status(500).json({ code: 500, message: "Internal Server Error" })
+    }
+})
 
 server.listen(process.env.PORT || 3000, () => {
     console.log(`Listening on *:${process.env.PORT || 3000}`)
@@ -110,29 +120,26 @@ server.listen(process.env.PORT || 3000, () => {
         chatmessage: []
     })
 
-    cache.push(cache.get("accounts"), {
+    cache.push(cache.get("accounts"), { //test account
         username: "mopsfl",
-        password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e"
+        password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e" //password: test
+    })
+    cache.push(cache.get("accounts"), { //test account
+        username: "stranger",
+        password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e" //password: test
     })
 })
 
 // SOCKET.IO
 
 io.on("connection", async(client) => {
-    let cookies, username
+    let cookies
     if (client.request.headers.cookie) cookies = misc.parseCookies(client.request.headers.cookie)
-    username = await user.generateRandomUsername()
-    if (!username) username = `${Math.floor(Math.random() * 1000000)}`
 
-    const userdata = await user.createUser(client, { username: username })
-    if (!userdata || !userdata.success) {
-        console.warn("<Error>: Unable to create user session")
-        return client.disconnect()
-    }
     const users = cache.get("users")
     const pings = cache.get("pings")
 
-    pings[client.uuid] = {
+    pings[client.id] = {
         total_pings: 0,
         last_ping: null,
         last_received_ping: null,
@@ -146,43 +153,107 @@ io.on("connection", async(client) => {
         value: string_encode_pattern,
         days: 365
     })
-    client.emit("setcookie", {
-        name: "uuid",
-        value: client.uuid,
-        days: 365
-    })
-    client.send(JSON.stringify(userdata))
+
     client.emit("session", {
-        uuid: client.uuid,
-        username: client.username.filtered,
         id: client.id,
         online_users: users.length,
         users: user.getAllUsers(),
         ping: 0
     })
 
+    client.on("login", async(packet) => {
+        console.log("login request: ", packet, ` > ${client.id}`)
+        const accounts = cache.get("accounts")
+        const sessions = cache.get("sessions")
+        const account = accounts.find(account => account.username == packet.username && bcrypt.compareSync(packet.password, account.password))
+        const logincallback = {
+            state: null,
+            value: null,
+            session: null
+        }
+
+        if (account) {
+            let session = await misc.encodeString(JSON.stringify({
+                    account: account,
+                    session_created: Date.now()
+                }), string_encode_pattern),
+                blockRequest = false
+
+            sessions.forEach(s => {
+                if (misc.decodeString(s, string_encode_pattern).account == account) blockRequest = true
+            })
+            if (blockRequest) {
+                logincallback.state = false
+                logincallback.value = await misc.encodeString("Another session is already logged in with this account.", string_encode_pattern)
+                client.emit(`${client.id}_logincallback`, logincallback, 1)
+                return console.log(`login request denied. another session is already logged in with this account. > ${client.id}`)
+            }
+
+            logincallback.state = true
+            logincallback.value = await misc.encodeString("Logging in...", string_encode_pattern)
+            logincallback.session = session
+            cache.push(sessions, session)
+            client.session = session
+
+            const userdata = await user.createUser(client, { username: account.username })
+            if (!userdata || !userdata.success) {
+                console.warn("<Error>: Unable to create user session")
+                return client.disconnect()
+            }
+            client.emit("setcookie", {
+                name: "uuid",
+                value: userdata.uuid,
+                days: 365
+            })
+
+            setTimeout(async() => {
+                client.emit(`${client.id}_logincallback`, {
+                    state: true,
+                    value: "Logged in!",
+                    userdata: {
+                        uuid: userdata.uuid,
+                        username: account.username
+                    }
+                }, 2)
+            }, 1500);
+            console.log(`login request accepted: ${client.id}`)
+        } else {
+            logincallback.state = false
+            logincallback.value = await misc.encodeString("Username or password invalid.", string_encode_pattern)
+            console.log(`login request invalid: ${client.id}`)
+        }
+
+        client.emit(`${client.id}_logincallback`, logincallback, 1)
+        if (logincallback.session) {
+            client.emit(`setcookie`, {
+                name: "account-session",
+                value: logincallback.session,
+                days: 1
+            })
+        }
+    })
+
     client.on("disconnect", async() => {
         user.removeUser(client)
-        const usernames = cache.get("usernames"),
-            usernameame_index = usernames.indexOf(client.username.filtered)
-        if (usernameame_index) cache.remove("usernames", usernameame_index)
+
+        //const usernames = cache.get("usernames"),
+        //    usernameame_index = usernames.indexOf(client.username.filtered)
+        //if (usernameame_index) cache.remove("usernames", usernameame_index)
     })
     client.on("ping", async(callback) => {
-        if (!await user.clientExists(client.uuid)) return
         if (typeof callback == "function") callback()
     })
     client.on("setping", async(packet) => {
         if (typeof packet.ping == "number") {
-            if (!await user.clientExists(client.uuid)) return
             client.ping = packet.ping
-            if (!pings[client.uuid]) return
-            pings[client.uuid] = {
-                total_pings: pings[client.uuid].total_pings + 1,
-                last_ping: pings[client.uuid].ping,
+            if (!pings[client.id]) return
+            pings[client.id] = {
+                total_pings: pings[client.id].total_pings + 1,
+                last_ping: pings[client.id].ping,
                 last_received_ping: packet.ping,
                 last_received_ping_time: Date.now(),
-                connection_time: pings[client.uuid].connection_time,
-                disconnection_time: pings[client.uuid].disconnection_time,
+                connection_time: pings[client.id].connection_time,
+                disconnection_time: pings[client.id].disconnection_time,
                 client_disconnected: client.disconnected,
             }
         }
@@ -190,6 +261,12 @@ io.on("connection", async(client) => {
 
     client.on("newmessage", async(data) => {
         if (!data.message) return
+        if (!await user.clientExists(client.uuid)) {
+            client.emit("message", {
+                message: "'newmessage' event blocked. invalid client session"
+            })
+            return console.log("'newmessage' event blocked. invalid client session")
+        }
         if (data.message.length > 69 || data.message.length < 1) return
         const cooldowns = cache.get("cooldowns").chatmessage
         if (!cooldowns || cooldowns.includes(client.uuid)) {
@@ -222,17 +299,27 @@ io.on("connection", async(client) => {
             time: Date.now()
         })
 
-        io.emit("usermessage", {
-            message: filteredMessage,
-            uuid: client.uuid,
-            username: client.username.filtered
-        })
+        for (const socket of await io.fetchSockets()) {
+            if (user.clientExists(socket.uuid)) {
+                client.emit("usermessage", {
+                    message: filteredMessage,
+                    uuid: client.uuid,
+                    username: client.username.filtered
+                })
+            }
+        }
 
         console.log(`new message: ${filteredMessage} > ${client.uuid}`)
     })
 
     client.on("changeusername", async(packet) => {
         if (!packet || !packet.username) return
+        if (!await user.clientExists(client.uuid)) {
+            client.emit("message", {
+                message: "'changeusername' event blocked. invalid client session"
+            })
+            return console.log("'changeusername' event blocked. invalid client session")
+        }
         if (packet.username.length > 20 || packet.username.length < 3) return
         const usernames = cache.get("usernames")
         const cooldowns = cache.get("cooldowns").changeusername
@@ -265,11 +352,7 @@ io.on("connection", async(client) => {
 
         client.username = {
             raw: packet.username,
-            filtered: filter.clean(packet.username),
-            cookie: await misc.encodeString(JSON.stringify({
-                raw: packet.username,
-                filtered: filter.clean(packet.username)
-            }), string_encode_pattern, Math.floor(10 * Math.random()), Math.floor(10 * Math.random()))
+            filtered: filter.clean(packet.username)
         }
         let lastName_index = usernames.indexOf(packet.username)
         if (lastName_index) cache.remove("usernames", lastName_index)
@@ -283,56 +366,6 @@ io.on("connection", async(client) => {
             online_users: cache.get("users").length
         })
         client.emit("usernamechanged", client.username)
-        client.emit("setcookie", {
-            name: "username",
-            value: client.username.cookie,
-            days: 365
-        })
-    })
-
-    client.on("login", async(packet) => {
-        console.log("login request: ", packet, ` > ${client.uuid}`)
-        const accounts = cache.get("accounts")
-        const sessions = cache.get("sessions")
-        const account = accounts.find(account => account.username == packet.username && bcrypt.compareSync(packet.password, account.password))
-        const logincallback = {
-            state: null,
-            value: null,
-            session: null
-        }
-
-        if (account) {
-            let session = bcrypt.hashSync(JSON.stringify({
-                account: account,
-                time: Date.now()
-            }))
-
-            logincallback.state = true
-            logincallback.value = await misc.encodeString("Logging in...", string_encode_pattern)
-            logincallback.session = session
-            cache.push(sessions, session)
-
-            setTimeout(async() => {
-                client.emit(`${client.uuid}_logincallback`, {
-                    state: true,
-                    value: "Logged in!",
-                }, 2)
-            }, 1500);
-            console.log(`login request accepted: ${client.uuid}`)
-        } else {
-            logincallback.state = false
-            logincallback.value = await misc.encodeString("Username or password invalid.", string_encode_pattern)
-            console.log(`login request invalid: ${client.uuid}`)
-        }
-
-        client.emit(`${client.uuid}_logincallback`, logincallback, 1)
-        if (logincallback.session) {
-            client.emit(`setcookie`, {
-                name: "account-session",
-                value: logincallback.session,
-                days: 1
-            })
-        }
     })
 })
 
@@ -342,18 +375,19 @@ setInterval(async() => {
     const pings = cache.get("pings")
     const sockets = io.sockets.sockets
     sockets.forEach(client => {
-        if (!pings[client.uuid] || pings[client.uuid].client_disconnected) return
-        if (((Date.now() - pings[client.uuid].connection_time) / 1000) < 2) return console.log(`ping check blocked (client to young): ${client.uuid}`)
-        if (((Date.now() - pings[client.uuid].last_received_ping_time) / 1000) > 10) {
+        if (!pings[client.id] || pings[client.id].client_disconnected) return
+        if (((Date.now() - pings[client.id].connection_time) / 1000) < 2) return console.log(`ping check blocked (client to young): ${client.id}`)
+        if (((Date.now() - pings[client.id].last_received_ping_time) / 1000) > 10) {
+            if (!client.failed_pings) client.failed_pings = 0
             client.failed_pings += 1
-            console.log(`ping check failed (${client.failed_pings}): ${client.uuid}`)
+            console.log(`ping check failed (${client.failed_pings}): ${client.id}`)
         }
         if (client.failed_pings >= 3) {
             client.emit("socketcheck", () => {
-                console.log(`ping check disconnection blocked. (socketcheck passed): ${client.uuid}`)
+                console.log(`ping check disconnection blocked. (socketcheck passed): ${client.id}`)
                 return
             })
-            console.log("disconnecting inactive client (pings failed): " + client.uuid)
+            console.log("disconnecting inactive client (pings failed): " + client.id)
             client.disconnect()
         }
     })

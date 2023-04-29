@@ -21,9 +21,11 @@
         <div element-input-notif class="input-notif hidden hidden-anim">
             <p element-value>Message</p>
         </div>
-        <input data-loginusername type="text" placeholder="Username" required>
-        <input data-loginpassword type="password" placeholder="Password" required>
-        <button element-loginsubmit type="submit" value="Login" value="Login"><span element-text>Login</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button>
+        <form>
+            <input data-loginusername type="text" placeholder="Username" required>
+            <input data-loginpassword type="password" placeholder="Password" required>
+            <button element-loginsubmit type="submit" value="Login" value="Login"><span element-text>Login</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button>
+        </form>
     </div>
     <main class="hidden">
         <div class="onlineusers-list" element-onlineusers-list>
@@ -45,10 +47,10 @@
                 <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input element-changeusername type="button" value="Change Username">
             </div>
         </div>
-        <footer>
-            <p><span element-userinfo>username &middot; uuid</span><span element-ping> &middot; ping: 0ms</span></p>
-        </footer>
     </main>
+    <footer>
+        <p><span element-userinfo>username &middot; uuid</span><span element-ping> ping: 0ms</span></p>
+    </footer>
 </body>
 
 </html>
