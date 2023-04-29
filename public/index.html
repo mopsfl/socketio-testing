@@ -37,15 +37,15 @@
             </ul>
         </div>
         <div class="inputs">
-            <input data-msg type="text" placeholder="Message" required> <input element-sendmsg type="button" value="Send">
+            <form><input data-msg type="text" placeholder="Message" required> <input element-sendmsg type="submit" value="Send"></form>
             <ul element-messages>
                 <template element-messagetemplate>
             <li></li>
         </template>
             </ul>
-            <div class="username-changer">
-                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input element-changeusername type="button" value="Change Username">
-            </div>
+            <form class="username-changer">
+                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input element-changeusername type="submit" value="Change Username">
+            </form>
         </div>
     </main>
     <footer>

@@ -114,8 +114,14 @@ invalidInput = function(input, speed = 150) {
 
 if (typeof socket != "string" && socket != "test") {
     const sp = () => {
-        return parseInt(parseCookies(document.cookie).sp) || 0
+        return parseInt(parseCookies(document.cookie).sp) || null
     }
+
+    setInterval(() => {
+        if (!sp()) {
+            return socket.emit("getsp")
+        }
+    }, 250);
 
     socket.on("message", (packet) => {
         servermessages.push(packet)
@@ -127,12 +133,13 @@ if (typeof socket != "string" && socket != "test") {
         if (!data || !data.users) return console.warn("<Event Error>: 'updateusers' event invalid. Missing data!")
         userlist.innerHTML = ""
 
-
         session.users = data.users
         session.online_users = data.users.length
 
         if (data.users.length > 1) {
+            console.log(data.users)
             data.users.forEach(user => {
+                console.log(user.uuid, session.uuid)
                 if (user.uuid == session.uuid) return
                 if (!user.uuid || !user.username) return
                 const user_template = usertemplate.content.cloneNode(true).children[0]
@@ -214,6 +221,7 @@ if (typeof socket != "string" && socket != "test") {
     })
 
     sendmsg.addEventListener("click", async(e) => {
+        e.preventDefault()
         if (!msg.validity.valid) return
 
         let value = msg.value,
@@ -221,11 +229,12 @@ if (typeof socket != "string" && socket != "test") {
                 message: value
             }
         await socket.emit("newmessage", packet)
-
+        msg.value = ""
         console.log("<Client>: sent event 'newmessage'", packet)
     })
 
     changeusername.addEventListener("click", async(e) => {
+        e.preventDefault()
         if (!usernameinput.validity.valid || usernameinput.value.length < 3 || usernameinput.value.length > 20) return
 
         let value = usernameinput.value,
@@ -233,7 +242,7 @@ if (typeof socket != "string" && socket != "test") {
                 username: value
             }
         await socket.emit("changeusername", packet)
-
+        usernameinput.value = ""
         console.log("<Client>: sent event 'changeusername'", packet)
     })
 
@@ -261,32 +270,38 @@ if (typeof socket != "string" && socket != "test") {
             console.log(`stage ${stage}`)
             console.log(`${session.id}_logincallback`, packet)
             if (stage == 1) {
-                const value = packet.value ? await decodeString(packet.value, sp()) : false
+                const value = packet.value ? await decodeString(packet.value, sp() || 0) : false
                 const inputNotif = login.querySelector("[element-input-notif]"),
                     inputNotifText = inputNotif.querySelector("[element-value]")
 
-                inputNotif.classList.remove("invalid")
-                inputNotif.classList.remove("valid")
-                inputNotif.classList.add(packet.state == true ? "valid" : "invalid")
-                inputNotifText.innerText = value
-                inputNotif.classList.remove("hidden")
-                inputNotif.classList.remove("hidden-anim")
-                inputNotif.classList.add("show-anim")
+                setTimeout(() => {
+                    inputNotif.classList.remove("invalid")
+                    inputNotif.classList.remove("valid")
+                    inputNotif.classList.add(packet.state == true ? "valid" : "invalid")
+                    inputNotifText.innerText = value
+                    inputNotif.classList.remove("hidden")
+                    inputNotif.classList.remove("hidden-anim")
+                    inputNotif.classList.add("show-anim")
+                }, 250);
 
                 if (packet.state == true) {
 
                 } else {
-                    loginpassword.value = ""
-                    loginusername.disabled = false
-                    loginpassword.disabled = false
-                    loginsubmit.disabled = false
-                    loginsubmit.querySelector("[element-icon]").classList.add("hidden")
-                    loginsubmit.querySelector("[element-text]").classList.remove("hidden")
+                    setTimeout(() => {
+                        loginpassword.value = ""
+                        loginusername.disabled = false
+                        loginpassword.disabled = false
+                        loginsubmit.disabled = false
+                        loginsubmit.querySelector("[element-icon]").classList.add("hidden")
+                        loginsubmit.querySelector("[element-text]").classList.remove("hidden")
+                    }, 750);
                 }
             } else if (stage == 2) {
                 if (packet.state == true) {
-                    login.classList.add("hidden")
-                    main.classList.remove("hidden")
+                    setTimeout(() => {
+                        login.classList.add("hidden")
+                        main.classList.remove("hidden")
+                    }, 1850);
 
                     if (packet.userdata) {
                         session.uuid = packet.userdata.uuid
@@ -296,7 +311,6 @@ if (typeof socket != "string" && socket != "test") {
                 }
             }
         })
-
     })
 } else {
     console.log(`<Client>: test view enabled ${location.hash != "" ? `<${location.hash}>` : ""}`)

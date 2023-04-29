@@ -2,8 +2,8 @@
 TODO:
 
 > fix filter bypass when sending on cooldown
-> fix duplicate messages
-> fix replication issues with 2+ sessions
+> logout function
+> keep logged in using account-session
 
 */
 
@@ -33,7 +33,7 @@ const regexes = {
     url: /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi
 }
 
-const string_encode_pattern = Math.floor(100 * Math.random())
+const string_encode_pattern = Math.floor(10 * Math.random())
 
 // UTILS
 
@@ -151,7 +151,7 @@ io.on("connection", async(client) => {
     client.emit("setcookie", {
         name: "sp",
         value: string_encode_pattern,
-        days: 365
+        days: 9e9
     })
 
     client.emit("session", {
@@ -173,22 +173,26 @@ io.on("connection", async(client) => {
         }
 
         if (account) {
-            let session = await misc.encodeString(JSON.stringify({
+            let session = encodeURIComponent(await misc.encodeString(JSON.stringify({
                     account: account,
-                    session_created: Date.now()
-                }), string_encode_pattern),
+                    session_created: Date.now(),
+                    id: client.id
+                }), string_encode_pattern)),
                 blockRequest = false
 
-            sessions.forEach(s => {
-                if (misc.decodeString(s, string_encode_pattern).account == account) blockRequest = true
+            await sessions.forEach(async s => {
+                if (JSON.parse(await misc.decodeString(decodeURIComponent(s), string_encode_pattern)).account.username == account.username) {
+                    console.log("block")
+                    blockRequest = true
+                }
             })
             if (blockRequest) {
                 logincallback.state = false
                 logincallback.value = await misc.encodeString("Another session is already logged in with this account.", string_encode_pattern)
                 client.emit(`${client.id}_logincallback`, logincallback, 1)
-                return console.log(`login request denied. another session is already logged in with this account. > ${client.id}`)
+                console.log(`login request denied. another session is already logged in with this account. > ${client.id}`)
+                return
             }
-
             logincallback.state = true
             logincallback.value = await misc.encodeString("Logging in...", string_encode_pattern)
             logincallback.session = session
@@ -206,16 +210,14 @@ io.on("connection", async(client) => {
                 days: 365
             })
 
-            setTimeout(async() => {
-                client.emit(`${client.id}_logincallback`, {
-                    state: true,
-                    value: "Logged in!",
-                    userdata: {
-                        uuid: userdata.uuid,
-                        username: account.username
-                    }
-                }, 2)
-            }, 1500);
+            await client.emit(`${client.id}_logincallback`, {
+                state: true,
+                value: "Logged in!",
+                userdata: {
+                    uuid: userdata.uuid,
+                    username: account.username
+                }
+            }, 2)
             console.log(`login request accepted: ${client.id}`)
         } else {
             logincallback.state = false
@@ -228,7 +230,11 @@ io.on("connection", async(client) => {
             client.emit(`setcookie`, {
                 name: "account-session",
                 value: logincallback.session,
-                days: 1
+                days: 7
+            })
+            client.emit("updateusers", {
+                users: user.getAllUsers(),
+                online_users: cache.get("users").length
             })
         }
     })
@@ -301,7 +307,7 @@ io.on("connection", async(client) => {
 
         for (const socket of await io.fetchSockets()) {
             if (user.clientExists(socket.uuid)) {
-                client.emit("usermessage", {
+                socket.emit("usermessage", {
                     message: filteredMessage,
                     uuid: client.uuid,
                     username: client.username.filtered
@@ -366,6 +372,14 @@ io.on("connection", async(client) => {
             online_users: cache.get("users").length
         })
         client.emit("usernamechanged", client.username)
+    })
+
+    client.on("getsp", () => {
+        return client.emit("setcookie", {
+            name: "sp",
+            value: string_encode_pattern,
+            days: 9e9
+        })
     })
 })
 
