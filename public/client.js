@@ -113,6 +113,10 @@ invalidInput = function(input, speed = 150) {
 /*SOCKET*/
 
 if (typeof socket != "string" && socket != "test") {
+    const sp = () => {
+        return parseInt(parseCookies(document.cookie).sp) || 0
+    }
+
     socket.on("message", (packet) => {
         servermessages.push(packet)
         console.log(`<Server>: message`, packet)
@@ -167,7 +171,7 @@ if (typeof socket != "string" && socket != "test") {
             socket.emit("ping", () => {
                 clientping = Date.now() - ping_start
                 ping.innerText = `ping: ${clientping}ms`
-                socket.emit("setping", clientping)
+                socket.emit("setping", { ping: clientping, uuid: session.uuid })
                 console.log(`<Server>: updated ping > ${clientping}`)
             })
         }, 1000);
@@ -252,9 +256,38 @@ if (typeof socket != "string" && socket != "test") {
 
         await socket.emit("login", packet)
 
-        socket.on(`${session.uuid}_logincallback`, async(packet) => {
-            console.log(`${session.uuid}_logincallback`, packet)
-            console.log(await decodeString(packet.value, parseInt(parseCookies(document.cookie).sp)))
+        socket.on(`${session.uuid}_logincallback`, async(packet, stage) => {
+            console.log(`stage ${stage}`)
+            if (stage == 1) {
+                console.log(`${session.uuid}_logincallback`, packet)
+                const value = packet.value ? await decodeString(packet.value, sp()) : false
+                const inputNotif = login.querySelector("[element-input-notif]"),
+                    inputNotifText = inputNotif.querySelector("[element-value]")
+
+                inputNotif.classList.remove("invalid")
+                inputNotif.classList.remove("valid")
+                inputNotif.classList.add(packet.state == true ? "valid" : "invalid")
+                inputNotifText.innerText = value
+                inputNotif.classList.remove("hidden")
+                inputNotif.classList.remove("hidden-anim")
+                inputNotif.classList.add("show-anim")
+
+                if (packet.state == true) {
+
+                } else {
+                    loginpassword.value = ""
+                    loginusername.disabled = false
+                    loginpassword.disabled = false
+                    loginsubmit.disabled = false
+                    loginsubmit.querySelector("[element-icon]").classList.add("hidden")
+                    loginsubmit.querySelector("[element-text]").classList.remove("hidden")
+                }
+            } else if (stage == 2) {
+                if (packet.state == true) {
+                    login.classList.add("hidden")
+                    main.classList.remove("hidden")
+                }
+            }
         })
 
     })

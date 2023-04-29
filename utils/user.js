@@ -60,6 +60,19 @@ module.exports = {
         }
     },
     /**
+     * Checks if a client exists with the given uuid
+     * @param {String} uuid 
+     */
+    clientExists: async function(uuid) {
+        const io = global.io
+        if (!io) return
+
+        for (const client of await io.fetchSockets()) {
+            if (client.uuid == uuid) return true
+        }
+        return false
+    },
+    /**
      * @description Generates and returns a random UUID
      */
     generateUUID: function() {

@@ -13,6 +13,7 @@ const server = http.createServer(app)
 const bodyParser = require("body-parser")
 const { Server } = require("socket.io")
 const wordFilter = require("bad-words")
+const bcrypt = require("bcryptjs")
 const fs = require("fs")
 const io = new Server(server, {
     cookie: {
@@ -57,7 +58,6 @@ app.use(cookies());
 app.get("/", (req, res, next) => {
     next()
 })
-
 app.get("/test", (req, res) => {
     try {
         return res.sendFile(__dirname + "/public/index.html")
@@ -66,7 +66,6 @@ app.get("/test", (req, res) => {
         return res.status(500).json({ code: 500, message: "Internal Server Error" })
     }
 })
-
 app.get("/server", (req, res) => {
     try {
         const users = user.getAllUsers()
@@ -77,7 +76,6 @@ app.get("/server", (req, res) => {
         return res.status(500).json({ code: 500, message: "Internal Server Error" })
     }
 })
-
 app.get("/server/pings", (req, res) => {
     try {
         const pings = cache.get("pings")
@@ -87,7 +85,6 @@ app.get("/server/pings", (req, res) => {
         return res.status(500).json({ code: 500, message: "Internal Server Error" })
     }
 })
-
 app.get("/server/users", (req, res) => {
     try {
         const users = user.getAllUsers()
@@ -100,13 +97,22 @@ app.get("/server/users", (req, res) => {
 
 server.listen(process.env.PORT || 3000, () => {
     console.log(`Listening on *:${process.env.PORT || 3000}`)
+
+    // Create cache keys
     cache.set("users", [])
     cache.set("usernames", [])
     cache.set("pings", {})
     cache.set("messages", [])
+    cache.set("accounts", [])
+    cache.set("sessions", [])
     cache.set("cooldowns", {
         changeusername: [],
         chatmessage: []
+    })
+
+    cache.push(cache.get("accounts"), {
+        username: "mopsfl",
+        password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e"
     })
 })
 
@@ -161,17 +167,19 @@ io.on("connection", async(client) => {
             usernameame_index = usernames.indexOf(client.username.filtered)
         if (usernameame_index) cache.remove("usernames", usernameame_index)
     })
-    client.on("ping", (callback) => {
+    client.on("ping", async(callback) => {
+        if (!await user.clientExists(client.uuid)) return
         if (typeof callback == "function") callback()
     })
-    client.on("setping", (ping) => {
-        if (typeof ping == "number") {
-            client.ping = ping
+    client.on("setping", async(packet) => {
+        if (typeof packet.ping == "number") {
+            if (!await user.clientExists(client.uuid)) return
+            client.ping = packet.ping
             if (!pings[client.uuid]) return
             pings[client.uuid] = {
                 total_pings: pings[client.uuid].total_pings + 1,
                 last_ping: pings[client.uuid].ping,
-                last_received_ping: ping,
+                last_received_ping: packet.ping,
                 last_received_ping_time: Date.now(),
                 connection_time: pings[client.uuid].connection_time,
                 disconnection_time: pings[client.uuid].disconnection_time,
@@ -283,10 +291,48 @@ io.on("connection", async(client) => {
     })
 
     client.on("login", async(packet) => {
-        console.log("login request: ", packet)
-        client.emit(`${client.uuid}_logincallback`, {
-            value: await misc.encodeString("test", string_encode_pattern, 5, 5)
-        })
+        console.log("login request: ", packet, ` > ${client.uuid}`)
+        const accounts = cache.get("accounts")
+        const sessions = cache.get("sessions")
+        const account = accounts.find(account => account.username == packet.username && bcrypt.compareSync(packet.password, account.password))
+        const logincallback = {
+            state: null,
+            value: null,
+            session: null
+        }
+
+        if (account) {
+            let session = bcrypt.hashSync(JSON.stringify({
+                account: account,
+                time: Date.now()
+            }))
+
+            logincallback.state = true
+            logincallback.value = await misc.encodeString("Logging in...", string_encode_pattern)
+            logincallback.session = session
+            cache.push(sessions, session)
+
+            setTimeout(async() => {
+                client.emit(`${client.uuid}_logincallback`, {
+                    state: true,
+                    value: "Logged in!",
+                }, 2)
+            }, 1500);
+            console.log(`login request accepted: ${client.uuid}`)
+        } else {
+            logincallback.state = false
+            logincallback.value = await misc.encodeString("Username or password invalid.", string_encode_pattern)
+            console.log(`login request invalid: ${client.uuid}`)
+        }
+
+        client.emit(`${client.uuid}_logincallback`, logincallback, 1)
+        if (logincallback.session) {
+            client.emit(`setcookie`, {
+                name: "account-session",
+                value: logincallback.session,
+                days: 1
+            })
+        }
     })
 })
 
