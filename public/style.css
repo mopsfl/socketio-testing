@@ -132,6 +132,7 @@ input:focus {
     -ms-overflow-style: none;
     scrollbar-width: none;
     border-radius: 3px;
+    user-select: none;
 }
 
 .onlineusers-list::-webkit-scrollbar {
@@ -251,6 +252,7 @@ button:disabled {
     border-radius: 3px;
     padding-left: 5px;
     padding-right: 5px;
+    user-select: none;
 }
 
 .input-notif.valid {
