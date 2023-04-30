@@ -151,7 +151,7 @@ input:focus {
 .onlineusers-list>ul {
     padding-left: 0px;
     padding-right: 0px;
-    text-align: center;
+    text-align: right;
     margin-bottom: 0px;
     display: grid;
 }

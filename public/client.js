@@ -349,7 +349,7 @@ if (typeof socket != "string" && socket != "test") {
     })
 } else {
     console.log(`<Client>: test view enabled ${location.hash != "" ? `<${location.hash}>` : ""}`)
-    const test_players = Math.floor(10*Math.random())
+    const test_players = Math.floor(location.hash.includes("onlineusers=") ? parseInt(location.hash.split("onlineusers=")[1]) || 10 : 10 *Math.random())
     for (let i = 0; i < test_players; i++) {
         const user_template = usertemplate.content.cloneNode(true).children[0]
         const user_actions = user_template.querySelector(".useractions")
