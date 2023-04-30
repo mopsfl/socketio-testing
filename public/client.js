@@ -143,8 +143,22 @@ if (typeof socket != "string" && socket != "test") {
                 if (user.uuid == session.uuid) return
                 if (!user.uuid || !user.username) return
                 const user_template = usertemplate.content.cloneNode(true).children[0]
-                user_template.innerText = user.username || user.uuid
+                const user_actions = user_template.querySelector(".useractions")
+                const username_text = user_template.querySelector("[data-username]")
+                const button_startpc = user_actions.querySelector("[element-startpconv]")
+                user_template.querySelector("[data-username]").innerText = user.username || user.uuid
                 userlist.appendChild(user_template)
+
+                user_template.addEventListener("click", (e) => {
+                    if (e.target != username_text) return
+                    user_actions.style.display = user_actions.style.display == "block" ? "none" : "block"
+                })
+
+                button_startpc.addEventListener("click", (e) => {
+                    button_startpc.disabled = true
+                    button_startpc.querySelector("[element-text]").classList.add("hidden")
+                    button_startpc.querySelector("[element-icon]").classList.remove("hidden")
+                })
             });
         } else {
             userlist.innerHTML = "-"
