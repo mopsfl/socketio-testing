@@ -32,19 +32,24 @@
             <h3>Online Users <span element-onlineusers>(0)</span></h3>
             <ul element-userlist>
                 <template element-usertemplate>
-                    <p></p>
+                    <div>
+                        <p class="userlist-username" data-username></p>
+                        <div class="useractions" element-useractions>
+                            <button element-startpconv><span element-text>Start Private Conversation</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button>
+                        </div>
+                    </div>
                 </template>
             </ul>
         </div>
         <div class="inputs">
-            <form><input data-msg type="text" placeholder="Message" required> <input element-sendmsg type="submit" value="Send"></form>
+            <form><input data-msg type="text" placeholder="Message" required> <button element-sendmsg type="submit"><span element-text>Send</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button></form>
             <ul element-messages>
                 <template element-messagetemplate>
             <li></li>
         </template>
             </ul>
             <form class="username-changer">
-                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <input element-changeusername type="submit" value="Change Username">
+                <input data-usernameinput type="text" name="username" id="username" placeholder="Username" required> <button element-changeusername type="submit"><span element-text>Send</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button>
             </form>
         </div>
     </main>

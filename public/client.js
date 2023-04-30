@@ -222,7 +222,11 @@ if (typeof socket != "string" && socket != "test") {
 
     sendmsg.addEventListener("click", async(e) => {
         e.preventDefault()
-        if (!msg.validity.valid) return
+        if (!msg.validity.valid) return invalidInput(msg)
+        sendmsg.disabled = true
+        msg.disabled = true
+        sendmsg.querySelector("[element-icon]").classList.remove("hidden")
+        sendmsg.querySelector("[element-text]").classList.add("hidden")
 
         let value = msg.value,
             packet = {
@@ -230,19 +234,36 @@ if (typeof socket != "string" && socket != "test") {
             }
         await socket.emit("newmessage", packet)
         msg.value = ""
+        sendmsg.disabled = false
+        sendmsg.querySelector("[element-icon]").classList.add("hidden")
+        sendmsg.querySelector("[element-text]").classList.remove("hidden")
+        setTimeout(() => {
+            msg.disabled = false
+        }, 350);
         console.log("<Client>: sent event 'newmessage'", packet)
     })
 
     changeusername.addEventListener("click", async(e) => {
         e.preventDefault()
-        if (!usernameinput.validity.valid || usernameinput.value.length < 3 || usernameinput.value.length > 20) return
+        if (!usernameinput.validity.valid || usernameinput.value.length < 3 || usernameinput.value.length > 20) return invalidInput(usernameinput)
 
+        changeusername.disabled = true
+        usernameinput.disabled = true
+        changeusername.querySelector("[element-icon]").classList.remove("hidden")
+        changeusername.querySelector("[element-text]").classList.add("hidden")
         let value = usernameinput.value,
             packet = {
                 username: value
             }
+
         await socket.emit("changeusername", packet)
         usernameinput.value = ""
+        changeusername.disabled = false
+        changeusername.querySelector("[element-icon]").classList.add("hidden")
+        changeusername.querySelector("[element-text]").classList.remove("hidden")
+        setTimeout(() => {
+            usernameinput.disabled = false
+        }, 1000);
         console.log("<Client>: sent event 'changeusername'", packet)
     })
 
@@ -317,8 +338,23 @@ if (typeof socket != "string" && socket != "test") {
     const test_players = Math.floor(10*Math.random())
     for (let i = 0; i < test_players; i++) {
         const user_template = usertemplate.content.cloneNode(true).children[0]
-        user_template.innerText = `OnlyTwentyChars_${Math.floor(10000*Math.random())}`
+        const user_actions = user_template.querySelector(".useractions")
+        const username_text = user_template.querySelector("[data-username]")
+        const button_startpc = user_actions.querySelector("[element-startpconv]")
+
+        username_text.innerText = `OnlyTwentyChars_${Math.floor(10000*Math.random())}`
         userlist.appendChild(user_template)
+
+        user_template.addEventListener("click", (e) => {
+            if(e.target != username_text) return
+            user_actions.style.display = user_actions.style.display == "block" ? "none" : "block"
+        })
+
+        button_startpc.addEventListener("click", (e) => {
+            button_startpc.disabled = true
+            button_startpc.querySelector("[element-text]").classList.add("hidden")
+            button_startpc.querySelector("[element-icon]").classList.remove("hidden")
+        })
     }
     if(test_players < 1){
         userlist.innerHTML = "-"
@@ -328,6 +364,6 @@ if (typeof socket != "string" && socket != "test") {
 
     setTimeout(() => {
         loading.classList.add("hidden")
-        login.classList.remove("hidden")
+        !location.hash.includes("skiplogin") ? login.classList.remove("hidden") : main.classList.remove("hidden")
     }, !location.hash.includes("noloading") ? 1000 : 0);
 }

@@ -33,7 +33,7 @@ const regexes = {
     url: /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi
 }
 
-const string_encode_pattern = Math.floor(10 * Math.random())
+const string_encode_pattern = Math.floor(100 * Math.random())
 
 // UTILS
 
@@ -105,7 +105,7 @@ app.get("/server/sessions", (req, res) => {
     }
 })
 
-server.listen(process.env.PORT || 3000, () => {
+server.listen(process.env.PORT || 3000, async() => {
     console.log(`Listening on *:${process.env.PORT || 3000}`)
 
     // Create cache keys
@@ -120,17 +120,22 @@ server.listen(process.env.PORT || 3000, () => {
         chatmessage: []
     })
 
-    cache.push(cache.get("accounts"), { //test account
+    //test accounts
+    cache.push(cache.get("accounts"), {
         username: "mopsfl",
         password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e" //password: test
     })
-    cache.push(cache.get("accounts"), { //test account
-        username: "stranger",
+    cache.push(cache.get("accounts"), {
+        username: "blacky",
         password: "$2a$05$E8/6HI.E0/hWJi04wJyhj.UehAXE3bxS9lC/2QBzaorPhjpJpEA6e" //password: test
+    })
+    cache.push(cache.get("accounts"), {
+        username: "stranger",
+        password: "$2a$05$29KwSGU2Z5x7HGJSEsi2yOCXmP6/k3rrAqjFMecapsjJUvls3huzy" //password: password123
     })
 })
 
-// SOCKET.IO
+// SERVER
 
 io.on("connection", async(client) => {
     let cookies
@@ -151,7 +156,7 @@ io.on("connection", async(client) => {
     client.emit("setcookie", {
         name: "sp",
         value: string_encode_pattern,
-        days: 9e9
+        days: 365
     })
 
     client.emit("session", {
@@ -266,9 +271,10 @@ io.on("connection", async(client) => {
     })
 
     client.on("newmessage", async(data) => {
-        if (!data.message) return
+        if (!data || !data.message) return
         if (!await user.clientExists(client.uuid)) {
             client.emit("message", {
+                event: "newmessage",
                 message: "'newmessage' event blocked. invalid client session"
             })
             return console.log("'newmessage' event blocked. invalid client session")
@@ -322,6 +328,7 @@ io.on("connection", async(client) => {
         if (!packet || !packet.username) return
         if (!await user.clientExists(client.uuid)) {
             client.emit("message", {
+                event: "changeusername",
                 message: "'changeusername' event blocked. invalid client session"
             })
             return console.log("'changeusername' event blocked. invalid client session")
@@ -343,6 +350,7 @@ io.on("connection", async(client) => {
         }, 1000);
         if (usernames && usernames.includes(packet.username)) {
             client.emit("message", {
+                event: "changeusername",
                 message: `username '${packet.username}' already in use`
             })
             return console.log(`username '${packet.username}' already in use`)
@@ -351,6 +359,7 @@ io.on("connection", async(client) => {
 
         if (regexes.url.test(packet.username)) {
             client.emit("message", {
+                event: "changeusername",
                 message: "'changeusername' event blocked: username contains a url"
             })
             return console.log("'changeusername' event blocked: username contains a url")
