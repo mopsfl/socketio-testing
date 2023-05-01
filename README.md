@@ -9,4 +9,6 @@ accounts:
 
 > username: mopsfl | password: test
 
-> username: stranger | password: test
+> username: stranger | password: password123
+
+> username: blacky | password: test
