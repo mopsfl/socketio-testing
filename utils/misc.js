@@ -6,7 +6,11 @@ module.exports = {
      */
     fake_string_pattern: "_§ds§_",
     parseCookies: cookie => cookie.split(';').map(v => v.split('=')).reduce((acc, v) => {
-        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+        try {
+            acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+        } catch (e) {
+            console.log(e)
+        }
         return acc
     }, {}),
     encodeString: async function(str, pattern, fakestrings = Math.floor(5 * Math.random()), fakestring_length = Math.floor(5 * Math.random())) {

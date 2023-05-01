@@ -188,7 +188,7 @@ if (typeof socket != "string" && socket != "test") {
         }
 
         setInterval(() => {
-            const ping_start = Date.now();
+            const ping_start = Date.now()
             socket.emit("ping", () => {
                 clientping = Date.now() - ping_start
                 ping.innerText = `ping: ${clientping}ms`
@@ -199,10 +199,25 @@ if (typeof socket != "string" && socket != "test") {
 
         login.classList.remove("hidden")
         loading.classList.add("hidden")
+
+        socket.on(`${session.id}_sessioncallback`, (packet) => {
+            console.log(`${session.id}_sessioncallback`, packet)
+
+            if (packet.state == true) {
+                login.classList.add("hidden")
+                main.classList.remove("hidden")
+
+                if (packet.userdata) {
+                    session.uuid = packet.userdata.uuid
+                    session.username = packet.userdata.username
+                    userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid} &middot; `
+                }
+            }
+        })
     })
 
     socket.on("socketcheck", (callback => {
-        return callback()
+        if (typeof callback == "function") return callback()
     }))
 
     socket.on("usermessage", async(data) => {
