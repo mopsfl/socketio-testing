@@ -166,6 +166,19 @@ io.on("connection", async(client) => {
         ping: 0
     })
 
+    client.on("logout", async(callback) => {
+        if (!client.uuid && !client.session) return callback({
+            state: false,
+            value: await misc.encodeString("No session to logout.", string_encode_pattern)
+        })
+
+        user.removeUser(client)
+        return callback({
+            state: true,
+            value: await misc.encodeString("Session logged out!", string_encode_pattern)
+        })
+    })
+
     client.on("ping", async(callback) => {
         if (typeof callback == "function") callback()
     })
@@ -185,7 +198,7 @@ io.on("connection", async(client) => {
         }
     })
 
-    if (cookies["account-session"]) {
+    if (cookies && cookies["account-session"]) {
         try {
             account_session = JSON.parse(await misc.decodeString(cookies["account-session"], string_encode_pattern))
         } catch (error) {
@@ -201,9 +214,9 @@ io.on("connection", async(client) => {
         })
 
         if (blockRequest) {
-            client.emit(`${client.id}_sessionback`, {
+            client.emit(`${client.id}_sessioncallback`, {
                 state: false,
-                value: await misc.encodeString("Another session is already logged in with this account.", string_encode_pattern)
+                value: await misc.encodeString("You've been logged out!\nAccount is used by another session.", string_encode_pattern)
             })
             console.log(`login request denied (account-session). another session is already logged in with this account. > ${client.id}`)
         }
@@ -217,7 +230,7 @@ io.on("connection", async(client) => {
             client.emit("setcookie", {
                 name: "uuid",
                 value: userdata.uuid,
-                days: 365
+                days: 1
             })
             cache.push(sessions, cookies["account-session"])
             client.session = cookies["account-session"]
@@ -226,7 +239,7 @@ io.on("connection", async(client) => {
 
             client.emit(`${client.id}_sessioncallback`, {
                 state: true,
-                value: "Session valid.",
+                value: await misc.encodeString("Session valid.", string_encode_pattern),
                 userdata: {
                     uuid: userdata.uuid,
                     username: account_session.account.username
@@ -284,12 +297,12 @@ io.on("connection", async(client) => {
             client.emit("setcookie", {
                 name: "uuid",
                 value: userdata.uuid,
-                days: 365
+                days: 1
             })
 
             await client.emit(`${client.id}_logincallback`, {
                 state: true,
-                value: "Logged in!",
+                value: await misc.encodeString("Logged in!", string_encode_pattern),
                 userdata: {
                     uuid: userdata.uuid,
                     username: account.username
@@ -307,7 +320,7 @@ io.on("connection", async(client) => {
             client.emit(`setcookie`, {
                 name: "account-session",
                 value: logincallback.session,
-                days: 7
+                days: 1
             })
             client.emit("updateusers", {
                 users: user.getAllUsers(),
@@ -437,7 +450,7 @@ io.on("connection", async(client) => {
         return client.emit("setcookie", {
             name: "sp",
             value: string_encode_pattern,
-            days: 9e9
+            days: 365
         })
     })
 })

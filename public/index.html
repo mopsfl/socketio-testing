@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client</title>
     <script src="/socket.io/socket.io.js" defer></script>
-    <script src="client.js" type="text/javascript" defer></script>
+    <script src="client-obj.js" type="text/javascript" defer></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -54,7 +54,10 @@
         </div>
     </main>
     <footer>
-        <p><span element-userinfo>username &middot; uuid</span><span element-ping> ping: 0ms</span></p>
+        <div class="footer-bottomleft">
+            <p><span element-userinfo>username &middot; uuid</span><span element-ping> ping: 0ms</span></p>
+        </div>
+        <div class="footer-bottomright"><button class="hidden" element-logout><span element-text>Logout</span><i element-icon class="fa fa-circle-o-notch fa-spin hidden"></i></button></div>
     </footer>
 </body>
 

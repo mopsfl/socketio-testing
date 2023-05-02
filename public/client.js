@@ -26,12 +26,17 @@ const userinfo = document.querySelector("[element-userinfo]"),
     changeusername = document.querySelector("[element-changeusername]"),
     loginusername = document.querySelector("[data-loginusername]"),
     loginpassword = document.querySelector("[data-loginpassword]"),
-    loginsubmit = document.querySelector("[element-loginsubmit]")
+    loginsubmit = document.querySelector("[element-loginsubmit]"),
+    logout = document.querySelector("[element-logout]")
 
 /*FUNCTIONS*/
 
 parseCookies = cookie => cookie.split(';').map(v => v.split('=')).reduce((acc, v) => {
-    acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+    try {
+        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+    } catch (e) {
+        console.error(e)
+    }
     return acc
 }, {})
 encodeString = async function(str, pattern, fakestrings = 0, fakestring_length = 50) {
@@ -170,7 +175,7 @@ if (typeof socket != "string" && socket != "test") {
     socket.on("session", async(data) => {
         console.log("<Server>: session", data)
         userlist.innerHTML = ""
-        userinfo.innerHTML = `${data.username} &middot; ${data.uuid} &middot; `
+        userinfo.innerHTML = `${data.username||"-"} &middot; ${data.uuid||"-"} &middot; `
 
         session = data
         dataonlineusers.innerText = `(${data.online_users})`
@@ -200,23 +205,38 @@ if (typeof socket != "string" && socket != "test") {
         login.classList.remove("hidden")
         loading.classList.add("hidden")
 
-        socket.on(`${session.id}_sessioncallback`, (packet) => {
+        socket.on(`${session.id}_sessioncallback`, async(packet) => {
             console.log(`${session.id}_sessioncallback`, packet)
-
+            console.log(`${session.id}_sessioncallback >`, await decodeString(packet.value, sp()))
             if (packet.state == true) {
                 login.classList.add("hidden")
                 main.classList.remove("hidden")
+                logout.classList.remove("hidden")
 
                 if (packet.userdata) {
                     session.uuid = packet.userdata.uuid
                     session.username = packet.userdata.username
-                    userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid} &middot; `
+                    userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid||"-"} &middot; `
                 }
+            } else {
+                const inputNotif = login.querySelector("[element-input-notif]"),
+                    inputNotifText = inputNotif.querySelector("[element-value]")
+
+                inputNotif.classList.remove("invalid")
+                inputNotif.classList.remove("valid")
+                inputNotif.classList.add(packet.state == true ? "valid" : "invalid")
+                inputNotifText.innerText = await decodeString(packet.value || "", sp())
+                inputNotif.classList.remove("hidden")
+                inputNotif.classList.remove("hidden-anim")
+                inputNotif.classList.add("show-anim")
+
+                document.cookie = "account-session" + "=; Max-Age=0"
             }
         })
     })
 
     socket.on("socketcheck", (callback => {
+        console.log("<Server>: socketcheck", callback)
         if (typeof callback == "function") return callback()
     }))
 
@@ -296,11 +316,39 @@ if (typeof socket != "string" && socket != "test") {
         console.log("<Client>: sent event 'changeusername'", packet)
     })
 
+    logout.addEventListener("click", async(e) => {
+        if (!session.uuid) return console.log("No session to logout")
+
+        logout.disabled = true
+        logout.querySelector("[element-icon]").classList.remove("hidden")
+        logout.querySelector("[element-text]").classList.add("hidden")
+
+        console.log("<Client>: sent event 'logout'")
+        await socket.emit("logout", async(packet) => {
+            console.log("<Server>: logout", packet)
+
+            document.cookie = "account-session" + "=; Max-Age=0"
+
+            if (packet.state == true) {
+                session.uuid = null
+                session.username = null
+                main.classList.add("hidden")
+                logout.classList.add("hidden")
+                login.classList.remove("hidden")
+
+                userinfo.innerHTML = `${session.username || "-"} &middot; ${session.uuid || "-"} &middot; `
+            }
+            console.log(`<Server>: ${await decodeString(packet.value, sp())}`)
+        })
+    })
+
     loginsubmit.addEventListener("click", async(e) => {
         e.preventDefault()
         if (!loginusername.validity.valid || loginusername.value.length < 1) return invalidInput(loginusername)
         if (!loginpassword.validity.valid || loginpassword.value.length < 1) return invalidInput(loginpassword)
 
+        const inputNotif = login.querySelector("[element-input-notif]"),
+            inputNotifText = inputNotif.querySelector("[element-value]")
         let username = loginusername.value,
             password = loginpassword.value,
             packet = {
@@ -317,12 +365,9 @@ if (typeof socket != "string" && socket != "test") {
         await socket.emit("login", packet)
 
         socket.on(`${session.id}_logincallback`, async(packet, stage) => {
-            console.log(`stage ${stage}`)
-            console.log(`${session.id}_logincallback`, packet)
+            console.log(`<Server>: ${session.id}_logincallback`, packet, stage)
             if (stage == 1) {
                 const value = packet.value ? await decodeString(packet.value, sp() || 0) : false
-                const inputNotif = login.querySelector("[element-input-notif]"),
-                    inputNotifText = inputNotif.querySelector("[element-value]")
 
                 setTimeout(() => {
                     inputNotif.classList.remove("invalid")
@@ -351,12 +396,23 @@ if (typeof socket != "string" && socket != "test") {
                     setTimeout(() => {
                         login.classList.add("hidden")
                         main.classList.remove("hidden")
+                        logout.classList.remove("hidden")
+                        inputNotif.classList.add("hidden")
+                        inputNotif.classList.add("hidden-anim")
+                        inputNotif.classList.remove("show-anim")
+                        loginusername.value = ""
+                        loginpassword.value = ""
+                        loginusername.disabled = false
+                        loginpassword.disabled = false
+                        loginsubmit.disabled = false
+                        loginsubmit.querySelector("[element-icon]").classList.add("hidden")
+                        loginsubmit.querySelector("[element-text]").classList.remove("hidden")
                     }, 1850);
 
                     if (packet.userdata) {
                         session.uuid = packet.userdata.uuid
                         session.username = packet.userdata.username
-                        userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid} &middot; `
+                        userinfo.innerHTML = `${session.username ||"-"} &middot; ${session.uuid||"-"} &middot; `
                     }
                 }
             }

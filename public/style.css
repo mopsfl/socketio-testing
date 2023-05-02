@@ -7,10 +7,17 @@ body {
     background-color: rgb(36, 36, 36);
 }
 
-footer {
+footer>.footer-bottomleft {
     position: absolute;
     bottom: 0px;
     left: 10px;
+    font-size: 12px;
+}
+
+footer>.footer-bottomright {
+    position: absolute;
+    bottom: 0px;
+    right: 10px;
     font-size: 12px;
 }
 
